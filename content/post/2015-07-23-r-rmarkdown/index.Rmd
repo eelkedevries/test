@@ -1,0 +1,95 @@
+---
+title: "Test results"
+author: "Eelke de Vries"
+date: 2015-07-23T21:13:14-05:00
+categories: ["R"]
+tags: ["R Markdown", "plot", "regression"]
+---
+
+#blogdown::serve_site()
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse = TRUE)
+```
+
+```{r, include=FALSE, echo=FALSE, warning=FALSE}
+
+library(knitr)
+library(kableExtra)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(ggpubr)
+
+
+knitr::opts_chunk$set(message=FALSE)
+
+root_dir <- "~/Documents/Experiments/exp_EEG42"
+txt_size <- 8
+
+
+```
+
+\newpage       
+
+# Theme
+```{r eval=TRUE, echo=FALSE, warning=FALSE, include=FALSE}
+
+myTheme <- function() {
+  theme(legend.position="none",
+        panel.border = element_rect(colour = "black"),
+        panel.grid.major = element_blank(),
+        strip.background = element_rect(fill='white'),
+        strip.text.x = element_text(size = txt_size, colour = "black", angle = 0, face = 'bold'),
+        strip.text.y = element_text(size = txt_size, colour = "black", angle = 0, face = 'bold'),
+        axis.text.x = element_text(color="black", size=txt_size, angle=45, hjust = 1, vjust = 1),
+        axis.text.y = element_text(color="black", size=txt_size),
+        axis.line = element_line(),
+        axis.ticks = element_line(colour='black'))
+}
+
+
+```
+
+
+```{r eval=TRUE, echo=FALSE, warning=FALSE, include=FALSE}
+df <- data.frame() # premake
+
+for(iSubj in c(1:40)) {
+  print(paste('Subject ', iSubj))
+  
+  # Load data
+  if (iSubj < 10) {    dat <- read.csv(paste0(root_dir, '/data/saccades/s0', iSubj, '_saccades.csv'), header=TRUE, stringsAsFactors=FALSE)  }
+  else if (iSubj >= 10){dat <- read.csv(paste0(root_dir, '/data/saccades/s', iSubj, '_saccades.csv'), header=TRUE, stringsAsFactors=FALSE)  }
+  df <- rbind(df, dat)
+}
+
+# Left/Middle/Right
+df$location[df$location == '1'] <- 'Left'
+df$location[df$location == '2'] <- 'Middle'
+df$location[df$location == '3'] <- 'Right'
+
+# All
+df$channel <- 'EYE'
+df_copy <- df # make copy
+df_copy$location <- 'All' # rename
+df <- rbind(df, df_copy) # append
+
+```
+
+# Saccadic latency 
+## Across subjects
+```{r eval=TRUE, echo=FALSE, warning=FALSE, include=TRUE, fig.width=8, fig.height=2}
+
+ggplot(data=df, aes(x=onset)) +
+  geom_histogram(color="black", fill="grey", binwidth=60) +
+  scale_x_continuous(breaks=seq(0,1500,250)) +
+  geom_vline(xintercept=0, col = 'black',  lty="11") + 
+  geom_vline(xintercept=167, col = 'black',  lty="11") +
+  theme_bw(base_size = txt_size) +
+  labs(title = "SACCADIC LATENCY", x = "Time in ms", y = "Count") +
+  myTheme()+
+  facet_grid(cols=vars(location), scales = 'fixed') +#fixed
+  ggsave(paste0(root_dir, '/res/saccade_latency.png'))
+
+```
